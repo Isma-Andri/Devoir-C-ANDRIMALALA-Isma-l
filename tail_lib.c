@@ -1,65 +1,105 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "tail_lib.h"
+#include <string.h>
 
-void ouvrir(FILE **fic, const char *fichier) {
-    *fic = fopen(fichier, "r");
-    if (*fic == NULL) {
-        perror("Erreur lors de l'ouverture du fichier");
-        exit(EXIT_FAILURE);
-    }
+#define MAX_CHAR 1000
+
+void tail_default(FILE* file,int argc, char *argv[]){
+	file=fopen(argv[1],"r");
+	if (file==NULL){
+		perror("Erreur d'ouverture du fichier\n");
+		return;
+	}
+	char lines[MAX_CHAR];
+	int compteur1=0,compteur2=0;
+	while((fgets(lines,MAX_CHAR,file)) != NULL){
+		compteur1++;
+	}
+	rewind(file);
+	while((fgets(lines,MAX_CHAR,file)) != NULL){
+		compteur2++;
+		if(compteur2 >= compteur1 - 10){
+			printf("%s",lines);
+		}
+	}
+	fclose(file);
 }
 
-int compteur(FILE *fic) {
-    int nbr_ligne = 0;
-    char chaine[LONGUEUR_MAX];
-
-    while (fgets(chaine, sizeof(chaine), fic) != NULL) {
-        nbr_ligne++;
-    }
-
-    return nbr_ligne;
-}
-
-void tail(FILE *fic, int start_line, int n, int verbose) {
-    char chaine[LONGUEUR_MAX];
-    int current_line = 0;
-
-    if (start_line < 0) start_line = 0;
-
-    while (fgets(chaine, sizeof(chaine), fic) != NULL) {
-        if (current_line >= start_line) {
-            printf("%s", chaine);
-        }
-        current_line++;
-    }
-
-    if (verbose) {
-        printf("Nombre total de lignes : %d\n", current_line);
-        if (current_line < n) {
-            printf("Le fichier ne contient que %d lignes, affichage de toutes les lignes.\n", current_line);
-        }
-    }
-}
-
-void optionq(int argc, char *argv[], int *n, int *verbose, char **fichier) {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-n") == 0) {
-            if (i + 1 < argc) {
-                *n = atoi(argv[++i]);
-                if (*n <= 0) {
-                    printf("Veuillez entrer un entier positif pour n.\n");
-                    exit(1);
-                }
-            } else {
-                printf("Option -n nécessite un argument.\n");
-                exit(1);
+void optionManager(FILE* file,char* argv[],int argc){
+	if (argc < 2){
+		printf("Utilisation: %s -<option> <fichier>\n",argv[0]);
+	}
+	else if (argc == 2){
+		if (strcmp(argv[1],"--help")==0){
+			printf("Utilisation: %s -<option> <fichier>\nAfficher les 10 dernières lignes de chaque FICHIER sur la sortie standard.\n\t-n:\tafficher les N dernières lignes, au lieu des 10\n\t-v:\tafficher toujours les en-têtes des noms de fichier\n",argv[0]);
+			printf("\t-c:\tafficher les N derniers octets\n");
+			printf("\t--help:\tpour afficher l'aide\n");
+		}
+		else {
+			tail_default(file,argc,argv);
+		}
+	} 
+	else if (argc > 2){
+		///Options
+		// -n
+		if (strcmp(argv[1],"-n")==0){
+			file=fopen(argv[3],"r");
+			if (file==NULL){
+				perror("Erreur d'ouverture du fichier\n");
+				return;
+			}
+			char lines[MAX_CHAR];
+			int n=atoi(argv[2]);
+			int compteur1=0,compteur2=0;
+			while((fgets(lines,MAX_CHAR,file)) != NULL){
+				compteur1++;
+			}
+			rewind(file);
+			while((fgets(lines,MAX_CHAR,file)) != NULL){
+				compteur2++;
+				if(compteur2 >= compteur1 - n + 1){
+					printf("%s",lines);
+				}
+			}
+			fclose(file);
+		}
+		// -v
+		if (strcmp(argv[1],"-v")==0){
+			printf("=> %s <=\n",argv[2]);
+			file=fopen(argv[2],"r");
+			if (file==NULL){
+				perror("Erreur d'ouverture du fichier\n");
+				return;
+			}
+			char lines[MAX_CHAR];
+			int compteur1=0,compteur2=0;
+			while((fgets(lines,MAX_CHAR,file)) != NULL){
+				compteur1++;
+			}
+			rewind(file);
+			while((fgets(lines,MAX_CHAR,file)) != NULL){
+				compteur2++;
+				if(compteur2 >= compteur1 - 10){
+					printf("%s",lines);
+				}
+			}
+			fclose(file);
+		}
+		// -c
+ /*       if (strcmp(argv[1], "-c") == 0) {
+            file = fopen(argv[2], "r");
+            if (file == NULL) {
+                perror("Erreur d'ouverture du fichier\n");
+                return;
             }
-        } else if (strcmp(argv[i], "-v") == 0) {
-            *verbose = 1;
-        } else {
-            *fichier = argv[i];
-        }
-    }
+            char lines[MAX_CHAR];
+            int compteur = 1;
+            while (fgets(lines, MAX_CHAR, file) != NULL) {
+                printf("%d: %s", compteur, lines);
+                compteur++;
+            }
+            fclose(file);
+		}
+*/ 
+	}
 }
-
